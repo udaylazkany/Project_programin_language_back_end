@@ -20,4 +20,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 Route::post('admin/login',[AdminController::class,'login']);
+
+
 Route::post('client/register',[ClientController::class,'register']);
+Route::post('client/login',[ClientController::class,'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::put('admin/editapprove/{id}',[AdminController::class,'edit_is_approved']);
+
+});

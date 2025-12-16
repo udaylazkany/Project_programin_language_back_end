@@ -13,7 +13,7 @@ class ClientController extends Controller
       $validated= $request->validate([
             'firstName'=>'required|string',
             'lastName'=>'required|string',
-            'phoneNumber'=>'required|digits:10',
+            'phoneNumber'=>'required|unique|size:10',
             'dob'=>'required|date',
             'password'=>'required',
             'personal_id_photo'=>'required|image|mimes:jpeg,png,jpg,gif,webp',
@@ -42,5 +42,23 @@ return response()->json([
 ], 201);
           
 
+    }
+    public function login(Request $request)
+    {
+      \Log::info('Login test', $request->all());
+      $validated=$request->validate(['phoneNumber'=>'required|string|size:10',
+    'password'=>'required'
+    ]);
+    $client=Client::where('phoneNumber',$request->phoneNumber)->first();
+    if(!$client|| ! Hash::check($validated['password'],$client->password))
+    {
+        return response()->json(['message' => 'Invalid credentials'], 401);
+    }
+    $token=$client->createToken('auth_token')->plainTextToken;
+    return response()->json(['message'=>'login successful',
+    "data"=>$client,
+            'token'=>$token,
+            
+            'status'=>201],201);
     }
 }

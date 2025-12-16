@@ -6,6 +6,7 @@ use App\Models\Admin;
 use Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Client;
 
 
 class AdminController extends Controller
@@ -32,5 +33,19 @@ class AdminController extends Controller
             
             'status'=>201],201);
         
+    }
+    public function edit_is_approved(Request $request,$id)
+    {
+$validated=$request->validate([
+    'is_approved'=>'required|boolean'
+]);
+$approved=Client::findOrFail($id);
+$approved->is_approved=$validated['is_approved'];
+$approved->save();
+ return response()->json([
+        'message' => 'Approval status updated successfully',
+        'data' => $approved
+    ]);
+
     }
 }

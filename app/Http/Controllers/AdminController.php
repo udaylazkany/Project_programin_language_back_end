@@ -48,4 +48,20 @@ $approved->save();
     ]);
 
     }
+
+      public function edit_Role(Request $request,$id)
+    {
+$validated=$request->validate([
+    'role'=>'required|in:owner,Tenant'
+]);
+$client=Client::findOrFail($id);
+$client->role=$validated['role'];
+$client->save();
+ return response()->json([
+        'message' => 'role  updated successfully',
+        'data' => $client
+    ]);
+
+    }
+
 }

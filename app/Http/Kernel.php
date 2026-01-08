@@ -55,7 +55,12 @@ class Kernel extends HttpKernel
      * These middleware may be assigned to groups or used individually.
      *
      * @var array<string, class-string|string>
+     *
      */
+    protected function schedule(Schedule $schedule)
+{
+    $schedule->job(new \App\Jobs\ReleaseExpiredContracts)->daily();
+}
     protected $routeMiddleware = [
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,

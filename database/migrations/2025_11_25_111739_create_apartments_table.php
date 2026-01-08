@@ -17,11 +17,10 @@ return new class extends Migration
             $table->id();
             $table->string('price');
             $table->string('space');
-            $table->enum('status',['vacant','rented'])->default('vacant');
+            $table->enum('statusApartments',['vacant','rented'])->default('vacant');
             $table->foreignId('owner_Id')->constrained('clients')->onDelete('cascade');
             $table->foreignId('adress_Id')->constrained('apartment__addresses')->onDelete('cascade');
-            $table->date('rent_start')->nullable();
-            $table->date('rent_end')->nullable();
+            $table->string('image')->nullable();
             $table->timestamps();
         });
     }

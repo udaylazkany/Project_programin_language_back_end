@@ -10,10 +10,11 @@ class ClientController extends Controller
 {
     public function register(Request $request)
     {
+       \Log::info('Login test', $request->all());
       $validated= $request->validate([
             'firstName'=>'required|string',
             'lastName'=>'required|string',
-            'phoneNumber'=>'required|unique|size:10',
+            'phoneNumber'=>'required|size:10|unique:clients,phoneNumber',
             'dob'=>'required|date',
             'password'=>'required',
             'personal_id_photo'=>'required|image|mimes:jpeg,png,jpg,gif,webp',
@@ -60,5 +61,14 @@ return response()->json([
             'token'=>$token,
             
             'status'=>201],201);
-    }
+    }public function logout(Request $request)
+{
+   
+    $request->user()->currentAccessToken()->delete();
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Logged out successfully'
+    ], 201);
+}
 }

@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Client;
 use App\Models\Apartment_Address;
+use App\Models\contracts;
 
 class Apartment extends Model
 { 
     protected $table="apartments";
     use HasFactory; 
-    protected $fillable = ['price','space','status','owner_Id','adress_Id','rent_start','rent_end'];
+    protected $fillable = ['price','space','status','owner_Id','adress_Id','rent_start','rent_end','image'];
     public function clients()
     {
 
@@ -21,5 +22,13 @@ class Apartment extends Model
     {
         return $this->belongsTo(Apartment_Address::class,'adress_Id');
     }
+    public function contracts()
+    {
+        return $this->hasMany(contracts::class);
+    }
+    public function comments()
+{
+    return $this->hasMany(Comment::class);
+}
      
 }

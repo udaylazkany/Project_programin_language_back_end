@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Admin;
+use App\Models\contracts;
 use App\Models\Apartment;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -26,6 +26,14 @@ protected $hidden=['password','remember_token'];
 public function apartments()
 {
     return $this->hasMany(Apartment::class,'owner_Id');
+}
+public function contracts()
+    {
+        return $this->hasMany(contracts::class);
+    }
+    public function comments()
+{
+    return $this->hasMany(Comment::class, 'tenant_id');
 }
 
 }

@@ -63,5 +63,18 @@ $client->save();
     ]);
 
     }
+    public function logout(Request $request)
+{
+    $user = $request->user();
+
+    if ($user) {
+        $user->api_token = null; // حذف التوكين
+        $user->save();
+    }
+
+    return response()->json([
+        'message' => 'Logged out successfully'
+    ]);
+}
 
 }

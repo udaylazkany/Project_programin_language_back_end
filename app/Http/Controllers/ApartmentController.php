@@ -6,6 +6,7 @@ use App\Models\Apartment;
 use Illuminate\Http\Request;
 use App\Models\Apartment_Address;
 use App\Models\contracts;
+use Illuminate\Support\Facades\Auth;
 
 
 class ApartmentController extends Controller
@@ -167,7 +168,7 @@ public function filterApartments(Request $request)
     ]);
 }
 
-   public function bookApartment(Request $request)
+ public function bookApartment(Request $request)
 {
     // 1. Validation
     $data = $request->validate([
@@ -179,7 +180,7 @@ public function filterApartments(Request $request)
 
     // 2. Check overlapping ACTIVE contracts only
     $overlap = contracts::where('apartment_id', $data['apartment_id'])
-        ->where('contractsstatus', 'active')   // 🔥 أهم سطر
+        ->where('contractsstatus', 'active')
         ->where(function ($q) use ($data) {
             $q->where('rent_start', '<', $data['rent_end'])
               ->where('rent_end', '>', $data['rent_start']);
@@ -193,65 +194,82 @@ public function filterApartments(Request $request)
         ], 422);
     }
 
-    // 3. إضافة حالة العقد
-    $data['contractsstatus'] = 'active';
+    // 3. إضافة حالة العقد من الطلب (افتراضي waiting approve)
+    $data['contractsstatus'] = $request->contractsstatus ?? 'waiting approve';
 
     // 4. إنشاء العقد
     $contract = contracts::create($data);
 
     // 5. تحديث حالة الشقة
     $apartment = Apartment::find($data['apartment_id']);
-    $apartment->statusApartments = 'rented';
+    $apartment->statusApartments = 'vacant';
     $apartment->save();
 
     return response()->json([
         'status'            => 201,
-        'message'           => 'تم حجز الشقة بنجاح.',
+        'message'           => 'تم إرسال طلب الحجز وهو بانتظار الموافقة.',
         'contract'          => $contract,
         'apartment_status'  => $apartment->statusApartments,
-        'rent_start'        => $contract->rent_start,
-        'rent_end'          => $contract->rent_end,
     ], 201);
 }
-    public function cancelBooking(Request $request)
+
+public function cancelBooking(Request $request)
 {
     $data = $request->validate([
-        'contract_id'   => ['required', 'exists:contracts,id'],
-        'tenant_id'     => ['required', 'exists:clients,id'],
+        'contract_id' => ['required', 'exists:contracts,id'],
     ]);
 
-    // 1. جلب العقد
-    $contract = contracts::where('id', $data['contract_id'])
-
-        ->where('tenant_id', $data['tenant_id']) // حماية: المستأجر يلغي عقده فقط
-        ->first();
+    // جلب العقد بدون tenant_id
+    $contract = contracts::where('id', $data['contract_id'])->first();
 
     if (!$contract) {
         return response()->json([
             'status'  => 'error',
-            'message' => 'العقد غير موجود أو لا يخص هذا المستأجر.',
+            'message' => 'العقد غير موجود.',
         ], 404);
     }
 
-    // 2. تحرير الشقة
     $apartment = Apartment::find($contract->apartment_id);
-    $apartment->statusApartments = 'vacant'; // ← الشقة أصبحت متاحة
-    $apartment->save();
+    $client = Auth::user();
 
-    // 3. تحديث حالة العقد (اختياري)
-    $contract->contractsstatus = 'cancelled';
-    $contract->save();
+    // 🔹 إذا كان المالك هو من يلغي العقد
+    if ($client && $client->role === 'owner' && $client->id === $apartment->owner_Id) {
+
+        $contract->contractsstatus = 'cancelled';
+        $contract->save();
+
+        $apartment->statusApartments = 'vacant';
+        $apartment->save();
+
+        return response()->json([
+            'status'            => 200,
+            'message'           => 'تم إلغاء العقد من قبل المالك وتم تحرير الشقة.',
+            'apartment_status'  => $apartment->statusApartments,
+            'contract_status'   => $contract->contractsstatus,
+        ], 200);
+    }
+
+    // 🔹 إذا كان المستأجر هو من يطلب الإلغاء
+    if ($client && $client->id === $contract->tenant_id) {
+
+        $contract->contractsstatus = 'waiting cancel';
+        $contract->save();
+
+        return response()->json([
+            'status'            => 201,
+            'message'           => 'تم إرسال طلب الإلغاء وهو بانتظار موافقة المالك.',
+            'apartment_status'  => $apartment->statusApartments,
+            'contract_status'   => $contract->contractsstatus,
+        ], 200);
+    }
 
     return response()->json([
-        'status'            => 201,
-        'message'           => 'تم إلغاء الحجز وتحرير الشقة.',
-        'apartment_status'  => $apartment->statusApartments,
-        'contract_status'   => $contract->contractsstatus,
-    ], 200);
+        'status'  => 'error',
+        'message' => 'غير مصرح لك بتنفيذ هذا الإجراء.',
+    ], 403);
 }
 public function updateBooking(Request $request)
 {
-    // 1. Validate input
     $data = $request->validate([
         'contract_id' => ['required', 'exists:contracts,id'],
         'tenant_id'   => ['required', 'exists:clients,id'],
@@ -259,22 +277,20 @@ public function updateBooking(Request $request)
         'rent_end'    => ['required', 'date', 'after:rent_start'],
     ]);
 
-    // 2. Fetch contract (must belong to tenant and be active)
     $contract = contracts::where('id', $data['contract_id'])
         ->where('tenant_id', $data['tenant_id'])
-        ->where('contractsstatus', 'active')
         ->first();
 
     if (!$contract) {
         return response()->json([
             'status'  => 404,
-            'message' => 'العقد غير موجود أو غير فعال أو لا يخص هذا المستأجر.',
+            'message' => 'العقد غير موجود أو لا يخص هذا المستأجر.',
         ], 404);
     }
 
-    // 3. Prevent overlapping with other active contracts
+    // منع التداخل مع عقود أخرى
     $overlap = contracts::where('apartment_id', $contract->apartment_id)
-        ->where('id', '!=', $contract->id) // استثناء العقد الحالي
+        ->where('id', '!=', $contract->id)
         ->where('contractsstatus', 'active')
         ->where(function ($q) use ($data) {
             $q->where('rent_start', '<', $data['rent_end'])
@@ -289,17 +305,19 @@ public function updateBooking(Request $request)
         ], 422);
     }
 
-    // 4. Update contract dates
+    // تحديث العقد
     $contract->rent_start = $data['rent_start'];
     $contract->rent_end   = $data['rent_end'];
+    $contract->contractsstatus = $request->contractsstatus ?? 'waiting update';
     $contract->save();
 
     return response()->json([
         'status'   => 201,
-        'message'  => 'تم تعديل الحجز بنجاح.',
+        'message'  => 'تم إرسال طلب التعديل وهو بانتظار الموافقة.',
         'contract' => $contract,
     ], 200);
 }
+ 
 public function getStatus(Request $request)
 {
     $request->validate([
@@ -356,5 +374,126 @@ public function myContracts()
         ]
     ]);
 }
+public function deleteApartment(Request $request, $id)
+{
+    // Log for debugging
+    \Log::info('Delete Apartment Request', ['apartment_id' => $id]);
 
+    // التحقق من أن المستخدم مالك
+    $user = $request->user();
+    if ($user->role !== 'owner') {
+        return response()->json([
+            'status' => false,
+            'message' => 'Not allowed to delete apartment'
+        ], 403);
+    }
+
+    // جلب الشقة
+    $apartment = Apartment::find($id);
+    if (!$apartment) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Apartment not found'
+        ], 404);
+    }
+
+    // التحقق أن المستخدم هو مالك الشقة
+    if ($apartment->owner_Id !== $user->id) {
+        return response()->json([
+            'status' => false,
+            'message' => 'You are not the owner of this apartment'
+        ], 403);
+    }
+
+    // التحقق من حالة العقد (لا يمكن الحذف إذا العقد نشط)
+    if ($apartment->contracts()->whereIn('contractsstatus', ['active','waiting update','waiting cancel'])->exists()) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Cannot delete apartment with active or pending contract'
+        ], 400);
+    }
+
+    // حذف الصورة إن وجدت
+    if ($apartment->image) {
+        \Storage::disk('public')->delete('apartments/' . $apartment->image);
+    }
+
+    // حذف العنوان المرتبط
+    if ($apartment->adress_Id) {
+        Apartment_Address::where('id', $apartment->adress_Id)->delete();
+    }
+
+    // حذف الشقة
+    $apartment->delete();
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'تم حذف الشقة مع عنوانها بنجاح'
+    ]);
+}
+public function approveCancel($contractId)
+{
+    $contract = contracts::find($contractId);
+
+    if (!$contract) {
+        return response()->json([
+            'status' => 404,
+            'message' => 'العقد غير موجود.',
+        ], 404);
+    }
+
+    $apartment = Apartment::find($contract->apartment_id);
+    $client = Auth::user();
+
+    // تحقق أن المالك هو من ينفذ العملية
+    if (!$client || $client->role !== 'owner' || $client->id !== $apartment->owner_Id) {
+        return response()->json([
+            'status' => 403,
+            'message' => 'غير مصرح لك بقبول طلب الإلغاء.',
+        ], 403);
+    }
+
+    // قبول الإلغاء
+    $contract->contractsstatus = 'cancelled';
+    $contract->save();
+
+    $apartment->statusApartments = 'vacant';
+    $apartment->save();
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'تم قبول طلب الإلغاء وتحرير الشقة.',
+    ], 200);
+}
+public function rejectCancel($contractId)
+{
+    $contract = contracts::find($contractId);
+
+    if (!$contract) {
+        return response()->json([
+            'status' => 404,
+            'message' => 'العقد غير موجود.',
+        ], 404);
+    }
+
+    $apartment = Apartment::find($contract->apartment_id);
+    $client = Auth::user();
+
+    // تحقق أن المالك هو من ينفذ العملية
+    if (!$client || $client->role !== 'owner' || $client->id !== $apartment->owner_Id) {
+        return response()->json([
+            'status' => 403,
+            'message' => 'غير مصرح لك برفض طلب الإلغاء.',
+        ], 403);
+    }
+
+    // رفض الإلغاء
+    $contract->contractsstatus = 'active';
+    $contract->save();
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'تم رفض طلب الإلغاء واستمرار العقد.',
+    ], 200);
+}
 }

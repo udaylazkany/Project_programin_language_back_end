@@ -44,6 +44,16 @@ return response()->json([
           
 
     }
+    public function getAllClients()
+{
+    $clients = Client::all();
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'All clients fetched successfully',
+        'data' => $clients
+    ], 200);
+}
     public function login(Request $request)
     {
       \Log::info('Login test', $request->all());
@@ -71,4 +81,5 @@ return response()->json([
         'message' => 'Logged out successfully'
     ], 201);
 }
+
 }

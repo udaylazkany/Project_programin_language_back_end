@@ -12,7 +12,7 @@ class Apartment extends Model
 { 
     protected $table="apartments";
     use HasFactory; 
-    protected $fillable = ['price','space','status','owner_Id','adress_Id','rent_start','rent_end','image'];
+    protected $fillable = ['price','space','statusApartments','owner_Id','adress_Id','rent_start','rent_end','image'];
     public function clients()
     {
 

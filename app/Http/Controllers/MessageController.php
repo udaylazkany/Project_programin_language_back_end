@@ -8,48 +8,56 @@ use Illuminate\Http\Request;
 
 class MessageController extends Controller
 {
-    // عرض جميع الرسائل في محادثة معينة
+    // ================================
+    // جلب الرسائل لمحادثة معينة
+    // ================================
     public function index($conversationId)
     {
         $conversation = Conversation::findOrFail($conversationId);
 
         $messages = $conversation->messages()
-            ->with('sender') // جلب بيانات المرسل
+            ->with(['sender', 'receiver'])
             ->orderBy('created_at', 'asc')
             ->get();
 
-        return response()->json($messages);
+        return response()->json([
+            "conversation_id" => $conversation->id,
+            "messages" => $messages
+        ]);
     }
 
-    // إرسال رسالة جديدة (مع إنشاء محادثة إذا مش موجودة)
-    public function store(Request $request)
-    {
-        $request->validate([
-            'owner_id'   => 'required|exists:clients,id',
-            'tenant_id'  => 'required|exists:clients,id',
-            'message'    => 'required|string',
-        ]);
+    // ================================
+    // إرسال رسالة (مع تصحيح الانعكاس)
+    // ================================
+   public function store(Request $request, $conversationId = null)
+{
+    $request->validate([
+        'message' => 'required|string',
+    ]);
 
-        // تحقق إذا في محادثة موجودة بين الطرفين
-        $conversation = Conversation::where('owner_id', $request->owner_id)
-            ->where('tenant_id', $request->tenant_id)
-            ->first();
+    $senderId = auth()->id();
 
-        if (!$conversation) {
-            // إذا ما في محادثة، أنشئ وحدة جديدة
-            $conversation = Conversation::create([
-                'owner_id'  => $request->owner_id,
-                'tenant_id' => $request->tenant_id,
-            ]);
-        }
+    // جلب المحادثة
+    $conversation = Conversation::findOrFail($conversationId);
 
-        // أضف الرسالة للمحادثة
-        $conversation->messages()->create([
-            'sender_id' => auth()->id(), // المرسل هو المستخدم الحالي
-            'message'   => $request->message,
-        ]);
-
-        // رجع المحادثة مع كل الرسائل
-        return response()->json($conversation->load('messages.sender'), 201);
+    // تحديد المستلم من داخل المحادثة
+    if ($senderId == $conversation->owner_id) {
+        $receiverId = $conversation->tenant_id;
+    } else {
+        $receiverId = $conversation->owner_id;
     }
+
+    // إنشاء الرسالة
+    $message = $conversation->messages()->create([
+        'sender_id'   => $senderId,
+        'receiver_id' => $receiverId,
+        'message'     => $request->message,
+    ]);
+
+    return response()->json([
+        "conversation_id" => $conversation->id,
+        "message" => $message
+    ], 201);
+}
+
 }

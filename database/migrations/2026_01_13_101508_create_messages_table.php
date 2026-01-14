@@ -17,6 +17,7 @@ return new class extends Migration
     $table->id();
     $table->foreignId('conversation_id')->constrained()->onDelete('cascade');
     $table->foreignId('sender_id')->constrained('clients')->onDelete('cascade');
+    $table->foreignId('receiver_id')->constrained('clients')->onDelete('cascade');
     $table->text('message');
     $table->timestamps();
 });

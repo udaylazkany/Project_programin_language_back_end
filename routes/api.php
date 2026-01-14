@@ -65,6 +65,7 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::get('conversations/{id}', [ConversationController::class, 'show']);  
     Route::get('clients/{id}/conversations', [ConversationController::class, 'userConversations']);  
     Route::get('conversations/{conversation}/messages', [MessageController::class, 'index']);
+    Route::post('conversations/messages', [MessageController::class, 'store']);
     Route::post('conversations/{conversation}/messages', [MessageController::class, 'store']);
     
     Route::post('client/logout', [ClientController::class, 'logout']);

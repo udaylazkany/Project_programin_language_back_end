@@ -81,5 +81,30 @@ return response()->json([
         'message' => 'Logged out successfully'
     ], 201);
 }
+////////////////////////////////////////////////////////////
+    public function index()
+    {
+        $clients = Client::all();
+        return view('clients', compact('clients'));
+    }
 
+    public function toggleStatus($id)
+    {
+        $client = Client::findOrFail($id);
+        $client->is_approved = $client->is_approved ? 0 : 1;
+        $client->save();
+
+        return back();
+    }
+
+    public function toggleRole($id)
+    {
+        $client = Client::findOrFail($id);
+        $client->role = $client->role === 'owner' ? 'Tenant' : 'owner';
+        $client->save();
+
+        return back();
+    }
 }
+
+

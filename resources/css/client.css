@@ -1,0 +1,166 @@
+/* ============================
+   Global Page Styling
+============================ */
+body {
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    padding: 20px;
+    background-color: #fafafa;
+    color: #333;
+    background: linear-gradient(135deg, #4e73df, #1cc88a);
+    color: #333;
+    min-height: 100vh;
+
+}
+
+/* ============================
+   Table Styling
+============================ */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e5e5;
+    text-align: center;
+    font-size: 15px;
+    
+}
+
+th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* ============================
+   Status Buttons (ON / OFF)
+============================ */
+.on-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.on-btn:hover {
+    background-color: #1e7e34;
+}
+
+.off-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.off-btn:hover {
+    background-color: #b52a37;
+}
+
+/* ============================
+   Role Buttons (Owner / Tenant)
+============================ */
+.role-btn {
+    padding: 7px 18px;
+    border: none;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    color: white;
+    font-size: 14px;
+}
+
+.role-btn.owner {
+    background-color: #007bff;
+}
+
+.role-btn.owner:hover {
+    background-color: #0056b3;
+}
+
+.role-btn.tenant {
+    background-color: #28a745;
+}
+
+.role-btn.tenant:hover {
+    background-color: #1e7e34;
+}
+.logout-btn {
+  background-color: #ff4757;
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-bottom: 15px;
+  transition: 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: #e84118;
+}
+/* شريط الهيدر */
+.header-bar {
+  display: flex;
+  justify-content: space-between; /* العنوان يمين والزر يسار */
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* زر تسجيل الخروج */
+.logout-btn {
+  background-color: #ff4757;
+  color: white;
+  padding: 12px 22px;   /* حجم أكبر */
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 18px;      /* تكبير الخط */
+  transition: 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: #e84118;
+}
+
+/* ============================
+   Responsive Table
+============================ */
+@media (max-width: 768px) {
+    table {
+        font-size: 13px;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+
+    .role-btn,
+    .on-btn,
+    .off-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+}

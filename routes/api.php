@@ -7,6 +7,8 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ApartmentController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContractsController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\ConversationController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -25,7 +27,6 @@ Route::post('admin/login',[AdminController::class,'login']);
 Route::post('client/register',[ClientController::class,'register']);
 Route::post('client/login',[ClientController::class,'login']);
 
-
 Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::get('admin/clients/all', [ClientController::class, 'getAllClients']);
     Route::put('admin/editapprove/{id}',[AdminController::class,'edit_is_approved']);
@@ -37,6 +38,7 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
 
 
 Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+
     Route::post('client/addApartment',[ApartmentController::class,'addApartment']);
     Route::get('client/showAll',[ApartmentController::class,'showAll']);
     Route::get('client/showmyAll',[ApartmentController::class,'showmyAll']);
@@ -51,13 +53,20 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::get('/apartments/can-comment/{apartmentId}/{tenantId}', [CommentController::class, 'canComment']);
     Route::delete('apartments/delete/{id}', [ApartmentController::class, 'deleteApartment']);
     Route::post('/apartments/Addcomments', [CommentController::class, 'store']);
+    Route::post('/apartments/contracts/cancel', [ApartmentController::class, 'cancelBooking']);
+    Route::post('/apartments/contracts/cancel/approve/{id}', [ApartmentController::class, 'approveCancel']);
+    Route::post('/apartments/contracts/cancel/reject/{id}', [ApartmentController::class, 'rejectCancel']);
+    Route::get('/apartments/viewApartmentStatus/{id}', [ContractsController::class, 'viewApartmentStatus']);
+    Route::get('/apartments/comments/{id}', [CommentController::class, 'getApartmentComments']);
+    Route::post('/contracts/approve-update/{contractId}', [ContractsController::class, 'approveUpdate']);
+    Route::post('/contracts/reject-update/{contractId}', [ContractsController::class, 'rejectUpdate']);
+    Route::post('conversations/create', [ConversationController::class, 'create']);
+    Route::post('conversations/check', [ConversationController::class, 'check']);
+    Route::get('conversations/{id}', [ConversationController::class, 'show']);  
+    Route::get('clients/{id}/conversations', [ConversationController::class, 'userConversations']);  
+    Route::get('conversations/{conversation}/messages', [MessageController::class, 'index']);
+    Route::post('conversations/{conversation}/messages', [MessageController::class, 'store']);
     
-Route::post('/apartments/contracts/cancel', [ApartmentController::class, 'cancelBooking']);
-Route::post('/apartments/contracts/cancel/approve/{id}', [ApartmentController::class, 'approveCancel']);
-Route::post('/apartments/contracts/cancel/reject/{id}', [ApartmentController::class, 'rejectCancel']);
-
-Route::get('/apartments/viewApartmentStatus/{id}', [ContractsController::class, 'viewApartmentStatus']);
-Route::get('/apartments/comments/{id}', [CommentController::class, 'getApartmentComments']);
     Route::post('client/logout', [ClientController::class, 'logout']);
 
 

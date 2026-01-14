@@ -478,6 +478,9 @@ public function rejectCancel($contractId)
 
     $apartment = Apartment::find($contract->apartment_id);
     $client = Auth::user();
+    $apartment->statusApartments = 'rented';
+    $apartment->save();
+
 
     // تحقق أن المالك هو من ينفذ العملية
     if (!$client || $client->role !== 'owner' || $client->id !== $apartment->owner_Id) {

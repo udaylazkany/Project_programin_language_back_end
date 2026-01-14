@@ -14,13 +14,13 @@ return [
     */
     'defaults' => [
     'guard' => 'web',
-    'passwords' => 'users',
+    'passwords' => 'admins',
 ],
 
 'guards' => [
     'web' => [
         'driver' => 'session',
-        'provider' => 'users',
+        'provider' => 'admins',
     ],
     'api' => [
     'driver' => 'token',

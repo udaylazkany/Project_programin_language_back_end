@@ -85,4 +85,58 @@ public function confirmBooking($contractId)
         'contract' => $contract
     ]);
 }
+public function approveUpdate($contractId)
+{
+    $contract = contracts::findOrFail($contractId);
+    $apartment = Apartment::findOrFail($contract->apartment_id);
+
+    $client = Auth::user();
+
+    // تحقق أن المستخدم الحالي هو المالك
+    if (!$client || $client->role !== 'owner' || $client->id !== $apartment->owner_Id) {
+        return response()->json([
+            "status" => 403,
+            "message" => "غير مصرح لك بقبول التعديل"
+        ], 403);
+    }
+
+    // قبول التعديل
+    $contract->contractsstatus = "active";
+    $contract->save();
+
+    return response()->json([
+        "status" => 200,
+        "message" => "تم قبول التعديل بنجاح",
+        "contract" => $contract
+    ]);
+}
+public function rejectUpdate($contractId)
+{
+    $contract = contracts::findOrFail($contractId);
+    $apartment = Apartment::findOrFail($contract->apartment_id);
+
+    $client = Auth::user();
+
+    // تحقق أن المستخدم الحالي هو المالك
+    if (!$client || $client->role !== 'owner' || $client->id !== $apartment->owner_Id) {
+        return response()->json([
+            "status" => 403,
+            "message" => "غير مصرح لك برفض التعديل"
+        ], 403);
+    }
+
+    // رفض التعديل → يرجع العقد كما كان
+    $contract->contractsstatus = "cancelled"; // يرجع للوضع الطبيعي
+    $contract->save();
+    $apartment->statusApartments = 'vacant';
+    $apartment->save();
+
+
+    return response()->json([
+        "status" => 200,
+        "message" => "تم رفض طلب التعديل",
+        "contract" => $contract
+    ]);
+}
+
 }

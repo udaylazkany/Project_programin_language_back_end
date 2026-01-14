@@ -3,36 +3,42 @@
 namespace App\Http\Controllers;
 
 use App\Models\Admin;
-use Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Client;
-
+use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
+    public function showLogin()
+    {
+        return view('login');
+    }
 
     public function login(Request $request)
-    {
-        
-        $credentials =$request->validate(
-            ['email'=>'required|email','password'=> 'required'],
-        );
-        $admin=Admin::where('email',$request->email)->first();
-      
-         if (! $admin || ! Hash::check($credentials['password'], $admin->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
-        }
-  
-      
-     
-      $token = $admin->createToken('auth_token')->plainTextToken;
+    {        \Log::info('Login request received', $request->all());
 
-            return response()->json(['message'=>'login successful',
-            'token'=>$token,
-            
-            'status'=>201],201);
-        
+
+        // التحقق من المدخلات
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        // جلب المستخدم
+        $admin = Admin::where('email', $request->email)->first();
+
+        // التحقق من كلمة المرور
+        if (! $admin || ! Hash::check($request->password, $admin->password)) {
+            return back()->withErrors([
+                'error' => '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة'
+            ]);
+        }
+\Log::info("Auth failed for: " . $request->email);
+        // تسجيل الدخول عبر Session
+        Auth::login($admin);
+\Log::info("Auth failed for: " . $request->email);
+        return redirect('/clients');
+
     }
     public function edit_is_approved(Request $request,$id)
     {
@@ -63,18 +69,10 @@ $client->save();
     ]);
 
     }
-    public function logout(Request $request)
-{
-    $user = $request->user();
 
-    if ($user) {
-        $user->api_token = null; // حذف التوكين
-        $user->save();
+    public function logout()
+    {
+        Auth::logout();
+        return redirect('/login');
     }
-
-    return response()->json([
-        'message' => 'Logged out successfully'
-    ]);
-}
-
 }
